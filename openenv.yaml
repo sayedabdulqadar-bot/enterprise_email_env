@@ -1,6 +1,14 @@
-spec_version: 1
-name: enterprise_email_env
-type: space
-runtime: fastapi
-app: env.server.app:app
-port: 8000
+name: enterprise-email-env
+version: 1.0.0
+description: Email triage environment
+
+tasks:
+  easy:
+    name: Email Triage - Easy
+    difficulty: 1
+  medium:
+    name: Email Triage - Medium
+    difficulty: 2
+  hard:
+    name: Email Triage - Hard
+    difficulty: 3
