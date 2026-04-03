@@ -5,29 +5,26 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first
+# Copy requirements
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt || pip install --no-cache-dir pydantic openai fastapi uvicorn requests python-dotenv pyyaml
+RUN pip install --no-cache-dir -r requirements.txt || \
+    pip install --no-cache-dir fastapi uvicorn pydantic requests python-dotenv pyyaml
 
-# Copy application files
-COPY server/ /app/server/
+# Copy project files
+COPY env/ /app/env/
 COPY data/ /app/data/
-
-# Ensure app.py exists
-RUN ls -la /app/server/ || echo "Server directory contents checked"
 
 # Environment setup
 ENV PYTHONUNBUFFERED=1
-ENV OPENENV_HOST=0.0.0.0
-ENV OPENENV_PORT=7860
+
+# HF uses dynamic PORT (VERY IMPORTANT)
+ENV PORT=7860
 
 EXPOSE 7860
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:7860/health', timeout=5)" || exit 1
+# ❌ DO NOT USE HEALTHCHECK (causes restart loop on HF)
 
-# Start the app
-CMD ["python", "-u", "server/app.py"]
+# ✅ Start FastAPI correctly using uvicorn
+CMD ["sh", "-c", "uvicorn env.server.app:app --host 0.0.0.0 --port ${PORT:-7860}"]
