@@ -1,0 +1,2 @@
+[console_scripts]
+server = enterprise_email_env.server.app:main

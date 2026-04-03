@@ -1,0 +1,23 @@
+[
+  {
+    "email": "I was charged twice for order #1234",
+    "category": "billing",
+    "priority": "medium",
+    "route": "billing_team",
+    "entities": {"order_id": "1234"}
+  },
+  {
+    "email": "My account is hacked!",
+    "category": "security",
+    "priority": "urgent",
+    "route": "security_team",
+    "entities": {}
+  },
+  {
+    "email": "Product broken, want refund for #5678",
+    "category": "billing",
+    "priority": "high",
+    "route": "refund_team",
+    "entities": {"order_id": "5678"}
+  }
+]
