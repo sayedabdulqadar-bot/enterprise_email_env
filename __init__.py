@@ -6,11 +6,17 @@
 
 """Enterprise Email Env Environment."""
 
-from .client import EnterpriseEmailEnv
-from .models import EnterpriseEmailAction, EnterpriseEmailObservation
+from .client import EnterpriseEmailEnv, create_sync_client
+from .models import (
+    EnterpriseEmailAction,
+    EnterpriseEmailObservation,
+    EnterpriseEmailState,
+)
 
 __all__ = [
     "EnterpriseEmailAction",
-    "EnterpriseEmailObservation",
     "EnterpriseEmailEnv",
+    "EnterpriseEmailObservation",
+    "EnterpriseEmailState",
+    "create_sync_client",
 ]

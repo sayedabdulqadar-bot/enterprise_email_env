@@ -1,4 +1,5 @@
-from env.models import (
+from .environment import EmailOpsEnv
+from .models import (
     Action,
     EnterpriseEmailAction,
     EnterpriseEmailObservation,
@@ -11,5 +12,6 @@ __all__ = [
     "EnterpriseEmailAction",
     "EnterpriseEmailObservation",
     "EnterpriseEmailState",
+    "EmailOpsEnv",
     "Observation",
 ]

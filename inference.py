@@ -1,7 +1,9 @@
-import os
+import argparse
 import re
-from env.environment import EmailOpsEnv
-from env.models import Action
+
+from client import EnterpriseEmailEnv, get_base_url
+from env.models import EnterpriseEmailAction
+
 
 # ---------------- LOGGING ---------------- #
 
@@ -36,11 +38,10 @@ def classify(email):
     if "hacked" in e or "login" in e:
         return "security", "urgent", "security_team"
 
-    elif "refund" in e or "charged" in e or "order" in e:
+    if "refund" in e or "charged" in e or "order" in e:
         return "billing", "high", "billing_team"
 
-    else:
-        return "general", "medium", "support_team"
+    return "general", "medium", "support_team"
 
 
 def build_response(step, route):
@@ -50,65 +51,62 @@ def build_response(step, route):
     if step == 1:
         return base
 
-    elif step == 2:
+    if step == 2:
         return base + " We will help you with this issue."
 
-    elif step == 3:
+    if step == 3:
         return base + " We will help you resolve this issue quickly."
 
-    elif step == 4:
+    if step == 4:
         return base + " We will assist you and resolve this issue as soon as possible."
 
-    else:
-        return base + " We will assist you immediately and resolve your issue completely."
+    return base + " We will assist you immediately and resolve your issue completely."
 
 
 # ---------------- MAIN ---------------- #
 
-def run_task(task_name):
-    env = EmailOpsEnv(task_name)
-
+def run_task(task_name, base_url):
     rewards = []
     steps = 0
     success = False
 
-    log_start(task_name, "enterprise_email_env", "rule_based_agent")
+    log_start(task_name, base_url, "rule_based_agent")
 
     try:
-        obs = env.reset()
+        with EnterpriseEmailEnv(base_url=base_url).sync() as env:
+            result = env.reset(task_name=task_name)
+            obs = result.observation
 
-        for step in range(1, 6):
-            steps = step
+            for step in range(1, 6):
+                steps = step
 
-            email = obs.email
+                email = obs.email
 
-            category, priority, route = classify(email)
-            entities = extract_entities(email)
-            response = build_response(step, route)
+                category, priority, route = classify(email)
+                entities = extract_entities(email)
+                response = build_response(step, route)
 
-            action = Action(
-                category=category,
-                priority=priority,
-                route=route,
-                response=response,
-                extracted_entities=entities
-            )
+                action = EnterpriseEmailAction(
+                    category=category,
+                    priority=priority,
+                    route=route,
+                    response=response,
+                    extracted_entities=entities,
+                )
 
-            result = env.step(action)
+                result = env.step(action)
+                obs = result.observation
 
-            reward = float(result.get("reward", 0.0))
-            done = bool(result.get("done", False))
-            error = result.get("error", None)
+                reward = float(result.reward or 0.0)
+                done = bool(result.done)
+                error = obs.info.get("error")
 
-            rewards.append(reward)
+                rewards.append(reward)
+                log_step(step, response, reward, done, error)
 
-            log_step(step, response, reward, done, error)
-
-            if done:
-                break
-
-        total_reward = sum(rewards)
-        success = total_reward > 0.5
+                if done:
+                    success = bool(obs.info.get("success", False))
+                    break
 
     except Exception as e:
         log_step(steps, "error", 0.0, True, str(e))
@@ -120,5 +118,19 @@ def run_task(task_name):
 # ---------------- ENTRY ---------------- #
 
 if __name__ == "__main__":
-    for task_name in ["easy", "medium", "hard"]:
-        run_task(task_name)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--base-url",
+        default=get_base_url(),
+        help="Environment server base URL, e.g. http://127.0.0.1:8000 or a deployed Space URL",
+    )
+    parser.add_argument(
+        "--tasks",
+        nargs="+",
+        default=["easy", "medium", "hard"],
+        help="Task names to evaluate in sequence",
+    )
+    args = parser.parse_args()
+
+    for task_name in args.tasks:
+        run_task(task_name, args.base_url)
